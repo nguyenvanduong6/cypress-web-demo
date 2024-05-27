@@ -1,10 +1,10 @@
 name: 'Cypress Run'
 description: 'Run cypress check and report in Email'
 inputs:
-  SENDGRID_API_KEY:
-    description: 'SendGrid API Key for sending email'
-    required: true
-    default: ''
+  # SENDGRID_API_KEY:
+  #   description: 'SendGrid API Key for sending email'
+  #   required: true
+  #   default: ''
   SHELL_TYPE:
     description: 'Shell type depend on OS where the code is running on'
     required: true
@@ -94,16 +94,16 @@ runs:
         folder: mochareports
         clean: false
 
-    - name: SendGrid setup permission
-      if: ${{steps.mocha-export-ubuntu.outcome == 'success' }}
-      shell: ${{ inputs.SHELL_TYPE }}
-      run: |
-        chmod +x ./.github/actions/cypress-run/send-email-report.js
+    # - name: SendGrid setup permission
+    #   if: ${{steps.mocha-export-ubuntu.outcome == 'success' }}
+    #   shell: ${{ inputs.SHELL_TYPE }}
+    #   run: |
+    #     chmod +x ./.github/actions/cypress-run/send-email-report.js
 
-    - name: SendGrid send email
-      if: ${{steps.mocha-export-ubuntu.outcome == 'success' }}
-      uses: peter-evans/sendgrid-action@v1
-      env:
-        SENDGRID_API_KEY: ${{ inputs.SENDGRID_API_KEY }}
-        SCRIPT_FILEPATH: ./.github/actions/cypress-run/send-email-report.js
-        GITHUB_PAGE: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/${{ github.sha }}
+    # - name: SendGrid send email
+    #   if: ${{steps.mocha-export-ubuntu.outcome == 'success' }}
+    #   uses: peter-evans/sendgrid-action@v1
+    #   env:
+    #     SENDGRID_API_KEY: ${{ inputs.SENDGRID_API_KEY }}
+    #     SCRIPT_FILEPATH: ./.github/actions/cypress-run/send-email-report.js
+    #     GITHUB_PAGE: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/${{ github.sha }}
