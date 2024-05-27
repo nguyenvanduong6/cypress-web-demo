@@ -1,0 +1,50 @@
+name: Manual trigger events
+
+on:
+  workflow_dispatch:
+    inputs:
+      typeRun:
+        type: choice
+        description: Run All actions?
+        required: true
+        options:
+          - Run all
+          - Run specific specs
+
+      specs:
+        description: 'Fill specs path if you want to run specific specs'
+        required: false
+        default: ''
+
+jobs:
+  ubuntu-run:
+    runs-on: ['self-hosted', 'linux', 'x64']
+    strategy:
+      fail-fast: false
+      matrix:
+        browsers: ['chrome']
+    steps:
+      - name: Check out🛎
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 20
+
+      - name: NPM install
+        uses: ./.github/actions/install-run
+        with:
+          SHELL_TYPE: 'bash'
+
+      - name: Running cypress check
+        uses: ./.github/actions/cypress-run
+        with:
+          # SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
+          SHELL_TYPE: 'bash'
+          OS_RUN: 'Ubuntu'
+          BROWSER_RUN: ${{ matrix.browsers }}
+          RUN_ALL: ${{ github.event.inputs.typeRun == 'Run all' }}
+          RUN_SPECS: ${{ github.event.inputs.specs }}
+
+      # - name: Running Danger check (Ubuntu only)
+      #   uses: ./.github/actions/danger-run
+      #   with:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
