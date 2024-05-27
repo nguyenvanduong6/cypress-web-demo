@@ -33,14 +33,14 @@ runs:
       shell: ${{ inputs.SHELL_TYPE }}
       run: |
         echo ${{ inputs.RUN_SPECS }}      
-        (npm run cypress:run-ci -- --browser ${{ inputs.BROWSER_RUN }} --spec ${{ inputs.RUN_SPECS }}) || true
+        (npm run cypress:run -- --browser ${{ inputs.BROWSER_RUN }} --spec ${{ inputs.RUN_SPECS }}) || true
 
     - name: Run E2E with run all specs option
       id: runE2EWithAllSpecs
       if: inputs.RUN_ALL == 'true'
       shell: ${{ inputs.SHELL_TYPE }}
       run: |
-        (npm run cypress:run-ci -- --browser ${{ inputs.BROWSER_RUN }}) || true
+        (npm run cypress:run -- --browser ${{ inputs.BROWSER_RUN }}) || true
 
     - name: Test Report
       uses: phoenix-actions/test-reporting@v8
