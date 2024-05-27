@@ -45,7 +45,7 @@ runs:
     - name: Test Report
       uses: phoenix-actions/test-reporting@v8
       id: test-report # Set ID reference for step
-      if: ${{ steps.runE2EWithOption.outcome == 'success' || steps.runE2EWithOptionManual.outcome == 'success' || steps.runE2EWithAllSpecs.outcome == 'success' }}
+      if: ${{ steps.runE2EWithOptionManual.outcome == 'success' || steps.runE2EWithAllSpecs.outcome == 'success' }}
       with:
         name: ${{ inputs.OS_RUN }} (${{ inputs.BROWSER_RUN }}) - test results # Name of the check run which will be created
         path: cypress/results/*.json # Path to test results
