@@ -1,0 +1,109 @@
+name: 'Cypress Run'
+description: 'Run cypress check and report in Email'
+inputs:
+  SENDGRID_API_KEY:
+    description: 'SendGrid API Key for sending email'
+    required: true
+    default: ''
+  SHELL_TYPE:
+    description: 'Shell type depend on OS where the code is running on'
+    required: true
+  OS_RUN:
+    description: 'OS name which running on'
+    required: true
+  BROWSER_RUN:
+    description: 'Which brower will be used for trigger this action'
+    required: true
+    default: 'chrome'
+  RUN_ALL:
+    description: 'Run all Specs or run specific Specs'
+    required: true
+    default: false
+  RUN_SPECS:
+    description: 'Specs defined for running action'
+    required: false
+    default: ''
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Run E2E with specific specs by trigger
+      id: runE2EWithOptionManual
+      if: ${{ inputs.RUN_ALL == 'false' && inputs.RUN_SPECS != '' }}
+      shell: ${{ inputs.SHELL_TYPE }}
+      run: |
+        echo ${{ inputs.RUN_SPECS }}      
+        (npm run cypress:run-ci -- --browser ${{ inputs.BROWSER_RUN }} --spec ${{ inputs.RUN_SPECS }}) || true
+
+    - name: Run E2E with run all specs option
+      id: runE2EWithAllSpecs
+      if: inputs.RUN_ALL == 'true'
+      shell: ${{ inputs.SHELL_TYPE }}
+      run: |
+        (npm run cypress:run-ci -- --browser ${{ inputs.BROWSER_RUN }}) || true
+
+    - name: Test Report
+      uses: phoenix-actions/test-reporting@v8
+      id: test-report # Set ID reference for step
+      if: ${{ steps.runE2EWithOption.outcome == 'success' || steps.runE2EWithOptionManual.outcome == 'success' || steps.runE2EWithAllSpecs.outcome == 'success' }}
+      with:
+        name: ${{ inputs.OS_RUN }} (${{ inputs.BROWSER_RUN }}) - test results # Name of the check run which will be created
+        path: cypress/results/*.json # Path to test results
+        reporter: mochawesome-json # Format of test results
+        fail-on-error: 'false'
+
+    - name: Bash - Mochawesome export
+      id: mocha-export-ubuntu
+      if: ${{ inputs.OS_RUN == 'Ubuntu' && steps.test-report.outcome == 'success' }}
+      env:
+        GITHUB_SHA: ${{ github.sha }}
+      run: |
+        npm run mochawesome-merge
+        npm run mochawesome-generate-html -- -o mochareports/$GITHUB_SHA
+
+        function format_seconds() {
+        (($1 >= 86400)) && printf '%d days and ' $(($1 / 86400)) # days
+        (($1 >= 3600)) && printf '%02d:' $(($1 / 3600 % 24))     # hours
+        (($1 >= 60)) && printf '%02d:' $(($1 / 60 % 60))         # minutes
+        printf '%02d%s\n' $(($1 % 60)) "$( (($1 < 60 )) && echo ' s.' || echo '')"
+        }
+
+        suites=$(jq .stats.suites mochareports/merged-report-mochawesome.json)
+        tests=$(jq .stats.tests mochareports/merged-report-mochawesome.json)
+        passes=$(jq .stats.passes mochareports/merged-report-mochawesome.json)
+        pending=$(jq .stats.pending mochareports/merged-report-mochawesome.json) 
+        failures=$(jq .stats.failures mochareports/merged-report-mochawesome.json) 
+        duration=$(format_seconds $(jq .stats.duration mochareports/merged-report-mochawesome.json)/1000)
+        skipped=$(jq .stats.skipped mochareports/merged-report-mochawesome.json) 
+        passPercent=$(jq '.stats.passPercent |= (. * 100 | round / 100)' mochareports/merged-report-mochawesome.json | jq .stats.passPercent)
+
+        echo "suites=$suites" >> "$GITHUB_ENV"
+        echo "tests=$tests" >> "$GITHUB_ENV"          
+        echo "passes=$passes" >> "$GITHUB_ENV"                 
+        echo "pending=$pending" >> "$GITHUB_ENV"               
+        echo "failures=$failures" >> "$GITHUB_ENV"           
+        echo "duration=$duration" >> "$GITHUB_ENV"                 
+        echo "skipped=$skipped" >> "$GITHUB_ENV"                     
+        echo "passPercent=$passPercent" >> "$GITHUB_ENV"
+      shell: ${{ inputs.SHELL_TYPE }}
+
+    - name: Deploy to GitHub Pages
+      if: ${{ steps.mocha-export-ubuntu.outcome == 'success' }}
+      uses: JamesIves/github-pages-deploy-action@v4.4.1
+      with:
+        folder: mochareports
+        clean: false
+
+    - name: SendGrid setup permission
+      if: ${{steps.mocha-export-ubuntu.outcome == 'success' }}
+      shell: ${{ inputs.SHELL_TYPE }}
+      run: |
+        chmod +x ./.github/actions/cypress-run/send-email-report.js
+
+    - name: SendGrid send email
+      if: ${{steps.mocha-export-ubuntu.outcome == 'success' }}
+      uses: peter-evans/sendgrid-action@v1
+      env:
+        SENDGRID_API_KEY: ${{ inputs.SENDGRID_API_KEY }}
+        SCRIPT_FILEPATH: ./.github/actions/cypress-run/send-email-report.js
+        GITHUB_PAGE: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/${{ github.sha }}
