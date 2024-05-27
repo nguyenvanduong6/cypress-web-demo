@@ -18,6 +18,7 @@ on:
 
 jobs:
   ubuntu-run:
+    permissions: write-all
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
