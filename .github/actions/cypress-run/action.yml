@@ -19,6 +19,14 @@ inputs:
     description: 'Specs defined for running action'
     required: false
     default: ''
+  SMTP_USERNAME:
+    description: 'User email'
+    required: true
+    default: ''
+  SMTP_PASSWORD:
+    description: 'User password'
+    required: true
+    default: ''
 
 runs:
   using: 'composite'
@@ -98,8 +106,9 @@ runs:
 
     - name: Run email script
       if: ${{steps.mocha-export-ubuntu.outcome == 'success' }}
+      shell: ${{ inputs.SHELL_TYPE }}
       env:
-        SMTP_USERNAME: ${{ secrets.SMTP_USERNAME }}
-        SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+        SMTP_USERNAME: ${{ inputs.SMTP_USERNAME }}
+        SMTP_PASSWORD: ${{ inputs.SMTP_PASSWORD }}
         GITHUB_PAGE: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/${{ github.sha }}
       run: node ./.github/actions/cypress-run/send-email-report.js

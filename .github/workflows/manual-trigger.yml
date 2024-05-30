@@ -42,6 +42,8 @@ jobs:
           BROWSER_RUN: ${{ matrix.browsers }}
           RUN_ALL: ${{ github.event.inputs.typeRun == 'Run all' }}
           RUN_SPECS: ${{ github.event.inputs.specs }}
+          SMTP_USERNAME: ${{ secrets.SMTP_USERNAME }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
 
       # - name: Running Danger check (Ubuntu only)
       #   uses: ./.github/actions/danger-run
