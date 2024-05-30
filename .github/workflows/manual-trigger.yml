@@ -18,7 +18,6 @@ on:
 
 jobs:
   ubuntu-run:
-    permissions: write-all
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -38,7 +37,6 @@ jobs:
       - name: Running cypress check
         uses: ./.github/actions/cypress-run
         with:
-          # SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
           SHELL_TYPE: 'bash'
           OS_RUN: 'Ubuntu'
           BROWSER_RUN: ${{ matrix.browsers }}
